@@ -1,0 +1,4 @@
+.idea
+*.pyc
+secrets.py
+vgshelf.db
