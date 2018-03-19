@@ -102,14 +102,14 @@ class DBConnection:
             conn.execute(create)
         conn.commit()
 
-    def write_entities(self, name: Entity, entities: List[dict]):
+    def write_entities(self, table: Entity, entities: List[dict]):
         conn = self.connection
         conv = self.convert
-        columns = COLUMNS[name]
+        columns = COLUMNS[table]
         q = '''
             INSERT INTO {} ({}) VALUES ({})
         '''.format(
-            name.value,
+            table.value,
             ', '.join(columns),
             ', '.join('?' for _ in columns)
         )
@@ -118,14 +118,14 @@ class DBConnection:
         conn.executemany(q, p)
         conn.commit()
 
-    def update_entities(self, name: Entity, entities: List[dict], attributes: dict):
+    def update_entities(self, table: Entity, entities: List[dict], attributes: dict):
         conn = self.connection
         conv = self.convert
-        columns = COLUMNS[name]
-        keys = KEYS[name]
+        columns = COLUMNS[table]
+        keys = KEYS[table]
         set_pars = [conv(v, columns[k]) for k, v in attributes.items()]
         q = 'UPDATE {} SET {} WHERE {}'.format(
-                name.value,
+                table.value,
                 ', '.join('{} = ?'.format(k) for k in attributes),
                 ' AND '.join('{} = ?'.format(k) for k in keys)
         )
@@ -134,37 +134,56 @@ class DBConnection:
         conn.executemany(q, p)
         conn.commit()
 
-    def load_entities(self, name: Entity, filter: Optional[dict]=None) -> List[dict]:
+    def load_entities(self, table: Entity, filter: Optional[dict]=None, limit: Optional[int]=None) -> List[dict]:
         conn = self.connection
         conv = self.convert
         parse = self.parse
-        columns = COLUMNS[name]
+        columns = COLUMNS[table]
+        limitsql = ' LIMIT {}'.format(limit) if limit else ''
         if filter:
-            q = 'SELECT {} FROM {} WHERE {}'.format(
+            q = 'SELECT {} FROM {} WHERE {}{}'.format(
                 ', '.join(columns),
-                name.value,
-                ' AND '.join("{} = ?".format(k) for k in filter)
+                table.value,
+                ' AND '.join("{} = ?".format(k) for k in filter),
+                limitsql
             )
             p = [conv(v, columns[k]) for k, v in filter.items()]
             logger.debug('QUERY: %s\nwith parameters: %s', q, p)
             res = conn.execute(q, p)
         else:
-            q = 'SELECT {} FROM {}'.format(', '.join(columns), name.value)
+            q = 'SELECT {} FROM {}{}'.format(', '.join(columns), table.value, limitsql)
             logger.debug('QUERY: %s', q)
             res = conn.execute(q)
         return [{coln: parse(v, colt) for v, (coln, colt) in zip(rec, columns.items())} for rec in iter(res.fetchone, None)]
 
-    def delete_entities(self, name: Entity, filter: Optional[dict]=None):
+    def delete_entities(self, table: Entity, filter: Optional[dict]=None):
+        '''
+            delete entities matching a filter
+        '''
         conn = self.connection
         conv = self.convert
-        columns = COLUMNS[name]
+        columns = COLUMNS[table]
         if filter:
-            q = 'DELETE FROM {} WHERE {}'.format(name.value, ' AND '.join("{} = ?".format(k) for k in filter))
+            q = 'DELETE FROM {} WHERE {}'.format(table.value, ' AND '.join("{} = ?".format(k) for k in filter))
             p = [conv(v, columns[k]) for k, v in filter.items()]
             logger.debug('QUERY: %s\nwith parameters: %s', q, p)
             conn.execute(q, p)
         else:
-            q = 'DELETE FROM {}'.format(name.value)
+            q = 'DELETE FROM {}'.format(table.value)
             logger.debug('QUERY: %s', q)
             conn.execute(q)
+        conn.commit()
+
+    def delete_entity(self, table: Entity, entity: dict):
+        '''
+            delete a single given entity
+        '''
+        conn = self.connection
+        conv = self.convert
+        keys = KEYS[table]
+        columns = COLUMNS[table]
+        q = 'DELETE FROM {} WHERE {}'.format(table.value, ' AND '.join("{} = ?".format(k) for k in keys))
+        p = [conv(entity[k], columns[k]) for k in keys]
+        logger.debug('QUERY: %s\nwith parameters: %s', q, p)
+        conn.execute(q, p)
         conn.commit()

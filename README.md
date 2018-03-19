@@ -40,13 +40,14 @@ python3 vgs.py download-masterdata-from-db
      * Humble (TODO)
      * Origin (TODO)
      * Uplay (TODO)
-* Integrazione con le anagrafiche da igdb.com (match basato sul nome)
+* Integrazione con le anagrafiche da igdb.com (match basato su steam id o nome)
 * Funzionalità interattiva di correzione dei match (TODO)
 * Funzionalità di aggiunta di giochi extra-piattaforma (TODO)
 * Aggiunta di attributi personali, quali rating, livello di completamento, tags (TODO)
 
 ## Wishlist
 
+* Identificazione dei giochi installati
 * Lancio dei giochi direttamente da questa applicazione
 * Salvataggio in cloud
 * App mobile

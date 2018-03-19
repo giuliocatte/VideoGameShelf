@@ -1,14 +1,36 @@
 import fire
 import logging
+import webbrowser
+import sys
 
 from source.services import Service
 from source.datasync import DataSync
 from source.db import DBConnection
+from source.constants import Entity, Validation
 
 
 logging.basicConfig(format='%(asctime)s:%(name)s:%(levelname)s %(message)s', level=logging.INFO)
+# TODO: rendere settabile da CLI
 logging.getLogger("vgs").setLevel(logging.INFO)
 
+# TODO: c'e' da fare qualche capriola per far bere le annotations a fire
+
+
+def read_int_value():
+    val = input()
+    if not val.isdigit():
+        print("invalid value, quitting")
+        sys.exit()
+    return int(val)
+
+
+def ask(text):
+    print(text, '(y/n)')
+    val = input().lower()
+    if val not in ('y', 'n'):
+        print("invalid value, quitting")
+        sys.exit()
+    return val == 'y'
 
 
 class Launcher:
@@ -16,7 +38,7 @@ class Launcher:
     def deploy_db(self):
         DBConnection().deploy()
 
-    def download_list_from_service(self, service):  # c'e' da fare qualche capriola per far bere le annotations a fire
+    def download_list_from_service(self, service):
         '''
             reads the list of games on the specified server
         '''
@@ -27,6 +49,55 @@ class Launcher:
 
     def download_masterdata_from_db(self, limit=None, erase=False):
         DataSync().sync_masterdata(limit, erase)
+
+    def process_staging(self):
+        '''
+            interactively process a single name in the staging table
+        '''
+        db = DBConnection()
+        data = db.load_entities(Entity.STAGING, limit=1)
+        if data:
+            data = data[0]
+        else:
+            print("no staged results to process")
+            return
+        results = data['results']
+        print("processing name {}, possible values are:".format(data["name"], len(results)))
+        for i, rec in enumerate(results, start=1):
+            print("{}. {}".format(i, rec['slug']))
+        if ask("open urls in browser?"):
+            for rec in results:
+                webbrowser.open(rec['url'])
+        owned = db.load_entities(Entity.OWNED, {"name": data["name"]})
+        print("you have own a game with this name in the following services:")
+        for rec in owned:
+            print("service: {0[service].value}, key: {0[key]}".format(rec))
+            print("please enter the number for the correct game, or 0 if no one of the values is correct:")
+            val = read_int_value()
+            if val > len(data["results"]):
+                print("invalid value, quitting")
+                return
+            elif not val:
+                print("choose one of the following:")
+                print("1. delete the game from list")
+                print("2. input the correct id")
+                print("3. mark game as not found")
+                val = read_int_value()
+                if val == 1:
+                    db.delete_entity(Entity.OWNED, rec)
+                elif val == 2:
+                    print("insert the id:")  # TODO: prendere lo slug, piuttosto che l'id
+                    val = read_int_value()
+                    db.update_entities(Entity.OWNED, [rec], {"validation": Validation.MANUAL, "id": val})
+                elif val == 3:
+                    db.update_entities(Entity.OWNED, [rec], {"validation": Validation.NOT_FOUND})
+                else:
+                    print("unexpected value, quitting")
+                    return
+            else:
+                db.update_entities(Entity.OWNED, [rec], {"validation": Validation.MANUAL, "id": results[val - 1]["id"]})
+        db.delete_entities(Entity.STAGING, {"name": data["name"]})
+        db.connection.commit()
 
 
 fire.Fire(Launcher)
