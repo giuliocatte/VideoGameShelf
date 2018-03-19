@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Dict
+from typing import List, Dict, Optional
 import logging
 
 from igdb_api_python.igdb import igdb
@@ -22,7 +22,7 @@ class DataSync:
         list = Client(service).get_list()
         self.db.write_entities(Entity.OWNED, list)
 
-    def sync_masterdata(self, erase: bool=False):
+    def sync_masterdata(self, limit: Optional[int]=None, erase: bool=False):
         if erase:
             owned = self.db.load_entities(Entity.OWNED)
             logger.info("deleting previously saved masterdata")
@@ -38,7 +38,7 @@ class DataSync:
         games = defaultdict(list)
         for el in owned:
             games[el['name']].append(el)
-            if len(games) >= 10:
+            if limit and len(games) >= limit:
                 break
         logger.debug("to search: %s total names in %s owned records", len(games), len(owned))
         self.download_md(games)
@@ -54,21 +54,21 @@ class DataSync:
         logging.info("loading masterdata for %s games", len(games))
         mdconn = igdb(IGDB_KEY)
         valid = []
-        for game, records in games.items():
+        for game, own_recs in games.items():
             res = mdconn.games({'search': game})
             # TODO: gestire fallimento
-            values = res.body
-            if values:
+            game_md = res.body
+            if game_md:
                 steam_id = False
-                for rec in records:
-                    if rec['service'] == Service.STEAM:
-                        steam_id = rec['id']
+                for own_rec in own_recs:
+                    if own_rec['service'] == Service.STEAM:
+                        steam_id = own_rec['key']
                         break
                 namematch = []
-                for val in values:
+                for val in game_md:
                     if val.get('external', {}).get('steam') == steam_id:
                         valid.append(val)
-                        self.db.update_entities(Entity.OWNED, records, {"validation": Validation.STEAM_ID, "id": val["id"]})
+                        self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.STEAM_ID, "id": val["id"]})
                         break
                     if val['name'] == game:
                         namematch.append(val)
@@ -76,18 +76,18 @@ class DataSync:
                     if len(namematch) == 1:
                         val = namematch[0]
                         valid.append(val)
-                        self.db.update_entities(Entity.OWNED, records, {"validation": Validation.NAME_MATCH, "id": val["id"]})
+                        self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.NAME_MATCH, "id": val["id"]})
                     elif namematch:
-                        self.db.write_entities(Entity.STAGING, [game, namematch])
-                        self.db.update_entities(Entity.OWNED, records, {"validation": Validation.MULTIPLE})
-                    elif len(values) == 1:
-                        val = values[0]
-                        self.db.update_entities(Entity.OWNED, records, {"validation": Validation.LOOSE_MATCH, "id": val["id"]})
+                        self.db.write_entities(Entity.STAGING, [{'name': game, 'results': namematch}])
+                        self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.MULTIPLE})
+                    elif len(game_md) == 1:
+                        val = game_md[0]
+                        self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.LOOSE_MATCH, "id": val["id"]})
                         valid.append(val)
                     else:
-                        self.db.write_entities(Entity.STAGING, [game, values])
-                        self.db.update_entities(Entity.OWNED, records, {"validation": Validation.CONFUSED})
+                        self.db.write_entities(Entity.STAGING, [{'name': game, 'results': game_md}])
+                        self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.CONFUSED})
             else:
-                self.db.update_entities(Entity.OWNED, records, {"validation": Validation.NOT_FOUND})
+                self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.NOT_FOUND})
 
-        self.db.write_entities(Entity.GAME, valid)
+        self.db.write_entities(Entity.GAME, [{'id': v['id'], 'name': v['name'], 'data': v} for v in valid])

@@ -2,7 +2,7 @@
 import sqlite3
 from collections import OrderedDict
 import json
-from typing import List, Optional
+from typing import List, Optional, Any
 import logging
 from enum import Enum
 
@@ -43,13 +43,6 @@ KEYS = {
     Entity.STAGING: ('name',)
 }
 
-COLUMN_TYPES = {
-    'enum': 'text',
-    'str': 'text',
-    'json': 'text',
-    'int': 'integer'
-}
-
 
 class DBConnection:
     '''
@@ -63,25 +56,25 @@ class DBConnection:
         self.connection = conn
 
     @staticmethod
-    def convert(value, column_type):
+    def convert(value: Any, column_type: type) -> str:
         if value is not None:
-            if column_type == 'json':
+            if issubclass(column_type, JSON):
                 return json.dumps(value)
-            elif column_type == 'enum':
+            elif issubclass(column_type, Enum):
                 return value.value
         return value
 
     @staticmethod
-    def parse(value, column_type):
+    def parse(value: str, column_type: type) -> Any:
         if value is not None:
-            if column_type == 'json':
+            if issubclass(column_type, JSON):
                 return json.loads(value)
-            elif column_type == 'enum':
-                return
+            elif issubclass(column_type, Enum):
+                return column_type(value)
         return value
 
     @staticmethod
-    def column_from_type(cls):
+    def column_from_type(cls: type) -> str:
         if issubclass(cls, (Enum, str)):
             return 'text'
         elif issubclass(cls, int):
@@ -114,8 +107,12 @@ class DBConnection:
         conv = self.convert
         columns = COLUMNS[name]
         q = '''
-            INSERT INTO {} VALUES ({})
-        '''.format(name.value, ', '.join('?' for _ in columns))
+            INSERT INTO {} ({}) VALUES ({})
+        '''.format(
+            name.value,
+            ', '.join(columns),
+            ', '.join('?' for _ in columns)
+        )
         p = [[conv(ent.get(k), v) for k, v in columns.items()] for ent in entities]
         logger.debug('QUERY: %s\nwith parameters: %s', q, p)
         conn.executemany(q, p)
@@ -140,17 +137,22 @@ class DBConnection:
     def load_entities(self, name: Entity, filter: Optional[dict]=None) -> List[dict]:
         conn = self.connection
         conv = self.convert
+        parse = self.parse
         columns = COLUMNS[name]
         if filter:
-            q = 'SELECT * FROM {} WHERE {}'.format(name.value, ' AND '.join("{} = ?".format(k) for k in filter))
+            q = 'SELECT {} FROM {} WHERE {}'.format(
+                ', '.join(columns),
+                name.value,
+                ' AND '.join("{} = ?".format(k) for k in filter)
+            )
             p = [conv(v, columns[k]) for k, v in filter.items()]
             logger.debug('QUERY: %s\nwith parameters: %s', q, p)
             res = conn.execute(q, p)
         else:
-            q = 'SELECT * FROM {}'.format(name.value)
+            q = 'SELECT {} FROM {}'.format(', '.join(columns), name.value)
             logger.debug('QUERY: %s', q)
             res = conn.execute(q)
-        return [dict(rec) for rec in iter(res.fetchone, None)]
+        return [{coln: parse(v, colt) for v, (coln, colt) in zip(rec, columns.items())} for rec in iter(res.fetchone, None)]
 
     def delete_entities(self, name: Entity, filter: Optional[dict]=None):
         conn = self.connection

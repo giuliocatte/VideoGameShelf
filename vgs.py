@@ -7,7 +7,7 @@ from source.db import DBConnection
 
 
 logging.basicConfig(format='%(asctime)s:%(name)s:%(levelname)s %(message)s', level=logging.INFO)
-logging.getLogger("vgs").setLevel(logging.DEBUG)
+logging.getLogger("vgs").setLevel(logging.INFO)
 
 
 
@@ -25,8 +25,8 @@ class Launcher:
             raise ValueError("unrecognised service: {}".format(service))
         DataSync().sync_list(service)
 
-    def download_masterdata_from_db(self):
-        DataSync().sync_masterdata()
+    def download_masterdata_from_db(self, limit=None, erase=False):
+        DataSync().sync_masterdata(limit, erase)
 
 
 fire.Fire(Launcher)
