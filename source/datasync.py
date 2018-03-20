@@ -17,9 +17,11 @@ class DataSync:
 
     def __init__(self):
         self.db = DBConnection()
+        self.mdconn = igdb(IGDB_KEY)
 
     def sync_list(self, service: str):
         list = Client(service).get_list()
+        # TODO questo deve andare in update, non in insert
         self.db.write_entities(Entity.OWNED, list)
 
     def sync_masterdata(self, limit: Optional[int]=None, erase: bool=False):
@@ -52,10 +54,9 @@ class DataSync:
             when multiple matches are available, a row in staging table is inserted
         '''
         logging.info("loading masterdata for %s games", len(games))
-        mdconn = igdb(IGDB_KEY)
         valid = []
         for game, own_recs in games.items():
-            res = mdconn.games({'search': game})
+            res = self.mdconn.games({'search': game})
             # TODO: gestire fallimento
             game_md = res.body
             if game_md:
@@ -91,3 +92,17 @@ class DataSync:
                 self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.NOT_FOUND})
 
         self.db.write_entities(Entity.GAME, [{'id': v['id'], 'name': v['name'], 'data': v} for v in valid])
+
+    def game_from_slug(self, slug: str) -> dict:
+        r = self.mdconn.games({'filters': {'[slug][eq]': slug}})
+        # TODO: gestire fallimento
+        r = r.body
+        if len(r) > 1:
+            raise RuntimeError("igdb answered with multiple records: {}".format(r.body))
+        try:
+            rec = r[0]
+        except IndexError:
+            raise ValueError("slug {} not found on igbd".format(slug))
+        if rec['slug'] != slug:
+            raise RuntimeError("igdb answered with slug {}, which is different from the given {}".format(rec['slug'], slug))
+        return rec

@@ -71,6 +71,7 @@ class Launcher:
         owned = db.load_entities(Entity.OWNED, {"name": data["name"]})
         print("you have own a game with this name in the following services:")
         for rec in owned:
+            game = None
             print("service: {0[service].value}, key: {0[key]}".format(rec))
             print("please enter the number for the correct game, or 0 if no one of the values is correct:")
             val = read_int_value()
@@ -80,22 +81,25 @@ class Launcher:
             elif not val:
                 print("choose one of the following:")
                 print("1. delete the game from list")
-                print("2. input the correct id")
+                print('2. input the correct "slug"')
                 print("3. mark game as not found")
                 val = read_int_value()
                 if val == 1:
-                    db.delete_entity(Entity.OWNED, rec)
+                    db.update_entities(Entity.OWNED, [rec], {"validation": Validation.DELETED})
                 elif val == 2:
-                    print("insert the id:")  # TODO: prendere lo slug, piuttosto che l'id
-                    val = read_int_value()
-                    db.update_entities(Entity.OWNED, [rec], {"validation": Validation.MANUAL, "id": val})
+                    print('insert the "slug":')
+                    val = input()
+                    game = DataSync().game_from_slug(val)
                 elif val == 3:
                     db.update_entities(Entity.OWNED, [rec], {"validation": Validation.NOT_FOUND})
                 else:
                     print("unexpected value, quitting")
                     return
             else:
-                db.update_entities(Entity.OWNED, [rec], {"validation": Validation.MANUAL, "id": results[val - 1]["id"]})
+                game = results[val - 1]
+            if game:
+                db.write_entities(Entity.GAME, [{'id': game['id'], 'name': game['name'], 'data': game}])
+                db.update_entities(Entity.OWNED, [rec], {"validation": Validation.MANUAL, "id": game["id"]})
         db.delete_entities(Entity.STAGING, {"name": data["name"]})
         db.connection.commit()
 

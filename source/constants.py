@@ -16,6 +16,7 @@ class Validation(Enum):
     NOT_FOUND = "not_found"
     CONFUSED = "confused"
     MANUAL = "manual"  # fixed manually later
+    DELETED = "deleted"  # I don't want to see this game
 
 
 class Service(Enum):

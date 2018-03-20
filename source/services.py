@@ -15,6 +15,8 @@ class Client:
         from secrets import STEAM_KEY, STEAM_PLAYER_ID
         from steam.webapi import WebAPI
 
+        # TODO: c'e' modo di escludere schifezze tipo i mod, le beta, e anche i film?
+
         api = WebAPI(STEAM_KEY)
         res = api.call("IPlayerService.GetOwnedGames", steamid=STEAM_PLAYER_ID, include_appinfo=True,
                         include_played_free_games=True, appids_filter=None)
