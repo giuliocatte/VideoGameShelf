@@ -2,7 +2,7 @@
 import sqlite3
 from collections import OrderedDict
 import json
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Iterable
 import logging
 from enum import Enum
 
@@ -102,7 +102,7 @@ class DBConnection:
             conn.execute(create)
         conn.commit()
 
-    def write_entities(self, table: Entity, entities: List[dict]):
+    def write_entities(self, table: Entity, entities: Iterable[dict]):
         conn = self.connection
         conv = self.convert
         columns = COLUMNS[table]

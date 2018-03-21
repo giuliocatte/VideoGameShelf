@@ -21,6 +21,6 @@ class Client:
         res = api.call("IPlayerService.GetOwnedGames", steamid=STEAM_PLAYER_ID, include_appinfo=True,
                         include_played_free_games=True, appids_filter=None)
         # TODO: gestire fallimento
-        return [{'service': Service.STEAM, 'key': game['appid'], 'name': game['name'], 'validation': Validation.TODO}
+        return [{'service': Service.STEAM, 'key': str(game['appid']), 'name': game['name'], 'validation': Validation.TODO}
                     for game in res['response']['games']]
 

@@ -20,9 +20,9 @@ class DataSync:
         self.mdconn = igdb(IGDB_KEY)
 
     def sync_list(self, service: str):
-        list = Client(service).get_list()
-        # TODO questo deve andare in update, non in insert
-        self.db.write_entities(Entity.OWNED, list)
+        lst = Client(service).get_list()
+        old = {r['key']: r for r in self.db.load_entities(Entity.OWNED, {'service': Service(service)})}
+        self.db.write_entities(Entity.OWNED, filter(lambda x: x['key'] not in old, lst))
 
     def sync_masterdata(self, limit: Optional[int]=None, erase: bool=False):
         if erase:

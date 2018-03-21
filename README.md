@@ -21,14 +21,23 @@ Per il primo deploy del db, eseguire
 ```
 python3 vgs.py deploy-db
 ```
-Per scaricare la lista da un servizio, usare
+Per scaricare la lista dei giochi posseduti da un servizio (record "owned"), usare
 ```
 python3 vgs.py download-list-from-service {servicename}
 ```
-Per scaricare le anagrafiche per tutti i giochi non ancora caricati da igdb, utilizzare
+Per scaricare le anagrafiche per tutti i giochi owned non ancora caricati
+ da igdb, utilizzare
 ```
 python3 vgs.py download-masterdata-from-db
 ```
+Una volta scaricate le anagrafiche non sempre il software riuscirà ad avere
+ un match completo, e talvolta salverà dei risultati in una tabella di staging. Per
+ associare manualmente i record "owned" mancanti alle anagrafiche, usare
+```
+python3 vgs.py process-staging
+```
+Questo metodo processa un singolo nome trovato sulla tabella di staging
+ (a cui potenzialmente vengono abbinati più record owned).
 
 ## Features
 
@@ -41,13 +50,13 @@ python3 vgs.py download-masterdata-from-db
      * Origin (TODO)
      * Uplay (TODO)
 * Integrazione con le anagrafiche da igdb.com (match basato su steam id o nome)
-* Funzionalità interattiva di correzione dei match (TODO)
+* Funzionalità interattiva di correzione dei match
 * Funzionalità di aggiunta di giochi extra-piattaforma (TODO)
 * Aggiunta di attributi personali, quali rating, livello di completamento, tags (TODO)
 
 ## Wishlist
 
-* Identificazione dei giochi installati
+* Identificazione dei giochi installati sul sistema corrente
 * Lancio dei giochi direttamente da questa applicazione
 * Salvataggio in cloud
 * App mobile
