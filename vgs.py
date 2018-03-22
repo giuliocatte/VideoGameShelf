@@ -36,6 +36,9 @@ def ask(text):
 class Launcher:
 
     def deploy_db(self):
+        '''
+            first creation of the database
+        '''
         DBConnection().deploy()
 
     def download_list_from_service(self, service):
@@ -48,6 +51,9 @@ class Launcher:
         DataSync().sync_list(service)
 
     def download_masterdata_from_db(self, limit=None, erase=False):
+        '''
+            downloads masterdata for all owned games
+        '''
         DataSync().sync_masterdata(limit, erase)
 
     def process_staging(self):
