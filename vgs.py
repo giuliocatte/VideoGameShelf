@@ -69,7 +69,7 @@ class Launcher:
             for rec in results:
                 webbrowser.open(rec['url'])
         owned = db.load_entities(Entity.OWNED, {"name": data["name"]})
-        print("you have own a game with this name in the following services:")
+        print("you own a game with this name in the following services:")
         for rec in owned:
             game = None
             print("service: {0[service].value}, key: {0[key]}".format(rec))
