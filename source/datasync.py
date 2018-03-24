@@ -5,9 +5,9 @@ import logging
 from igdb_api_python.igdb import igdb
 
 from secrets import IGDB_KEY
-from .db import DBConnection, Entity
-from .services import Client, Service
-from .constants import Validation
+from .db import DBConnection
+from .services import Client
+from .constants import Validation, Service, Entity
 
 
 logger = logging.getLogger('vgs.datasync')
@@ -71,7 +71,7 @@ class DataSync:
                         valid.append(val)
                         self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.STEAM_ID, "id": val["id"]})
                         break
-                    if val['name'] == game:
+                    if val['name'].lower() == game.lower():
                         namematch.append(val)
                 else:
                     if len(namematch) == 1:

@@ -3,15 +3,13 @@ import logging
 import webbrowser
 import sys
 
-from source.services import Service
 from source.datasync import DataSync
 from source.db import DBConnection
-from source.constants import Entity, Validation
+from source.constants import Entity, Validation, Service
 
 
 logging.basicConfig(format='%(asctime)s:%(name)s:%(levelname)s %(message)s', level=logging.INFO)
-# TODO: rendere settabile da CLI
-logging.getLogger("vgs").setLevel(logging.INFO)
+logger = logging.getLogger("vgs")
 
 # TODO: c'e' da fare qualche capriola per far bere le annotations a fire
 
@@ -34,6 +32,9 @@ def ask(text):
 
 
 class Launcher:
+
+    def __init__(self, loglevel='INFO'):
+        logger.setLevel(getattr(logging, loglevel.upper()))
 
     def deploy_db(self):
         '''
@@ -70,7 +71,7 @@ class Launcher:
         results = data['results']
         print("processing name {}, possible values are:".format(data["name"], len(results)))
         for i, rec in enumerate(results, start=1):
-            print("{}. {}".format(i, rec['slug']))
+            print("{}. {} ({} - {})".format(i, rec['slug'], min(d['y'] for d in rec['release_dates']), rec['name']))
         if ask("open urls in browser?"):
             for rec in results:
                 webbrowser.open(rec['url'])

@@ -1,26 +1,13 @@
 from typing import List
-from .constants import Validation, Service
+from importlib import import_module
 
 
 class Client:
 
     def __init__(self, service: str):
         self.service = service
+        mod = import_module('.clients.' + service, __package__)
+        self.client = mod.Connector()
 
     def get_list(self) -> List[dict]:
-        return getattr(self, '_list_from_' + self.service)()
-
-    def _list_from_steam(self) -> List[dict]:
-        # import nel metodo cosi' non devo necessariamente dipendere da steam
-        from secrets import STEAM_KEY, STEAM_PLAYER_ID
-        from steam.webapi import WebAPI
-
-        # TODO: c'e' modo di escludere schifezze tipo i mod, le beta, e anche i film?
-
-        api = WebAPI(STEAM_KEY)
-        res = api.call("IPlayerService.GetOwnedGames", steamid=STEAM_PLAYER_ID, include_appinfo=True,
-                        include_played_free_games=True, appids_filter=None)
-        # TODO: gestire fallimento
-        return [{'service': Service.STEAM, 'key': str(game['appid']), 'name': game['name'], 'validation': Validation.TODO}
-                    for game in res['response']['games']]
-
+        return self.client.get_list()

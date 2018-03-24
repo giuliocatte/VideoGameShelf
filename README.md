@@ -6,8 +6,8 @@ WIP
 python 3.6
 
 * igdb_api_python (https://github.com/igdb/igdb_api_python)
-* steam (https://pypi.python.org/pypi/steam)
-* fire
+* se si vuole la cli, fire
+* se si vuole steam, steam (https://pypi.python.org/pypi/steam)
 
 ## SetUp
 Mettere in un file secrets.py le seguenti costanti
