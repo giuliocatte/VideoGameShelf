@@ -2,7 +2,7 @@
 import sqlite3
 from collections import OrderedDict
 import json
-from typing import List, Optional, Any, Iterable
+from typing import List, Optional, Any, Iterable, Sequence
 import logging
 from enum import Enum
 
@@ -134,11 +134,14 @@ class DBConnection:
         conn.executemany(q, p)
         conn.commit()
 
-    def load_entities(self, table: Entity, filter: Optional[dict]=None, limit: Optional[int]=None) -> List[dict]:
+    def load_entities(self, table: Entity, filter: Optional[dict]=None, limit: Optional[int]=None,
+                      fields: Optional[Sequence]=None) -> List[dict]:
         conn = self.connection
         conv = self.convert
         parse = self.parse
         columns = COLUMNS[table]
+        if fields:
+            columns = {k: v for k, v in columns.items() if k in fields}
         limitsql = ' LIMIT {}'.format(limit) if limit else ''
         if filter:
             q = 'SELECT {} FROM {} WHERE {}{}'.format(

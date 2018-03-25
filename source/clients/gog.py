@@ -1,7 +1,11 @@
+'''
+    inspired by https://github.com/Yepoleb/pygogapi
+'''
+
 import webbrowser
 import requests
 import json
-from typing import List, Optional
+from typing import Iterator, Optional
 
 from ..constants import Service, Validation
 
@@ -72,7 +76,7 @@ class Connector:
         resp = requests.request(method, API_BASE + url, headers=headers, params=params)
         return resp.json()
 
-    def get_list(self) -> List[dict]:
+    def get_list(self) -> Iterator[dict]:
         games = self.call_api("/account/getFilteredProducts?mediaType=1")['products']
         for game in games:
             yield {'service': Service.GOG, 'key': str(game['id']), 'name': game['title'], 'validation': Validation.TODO}

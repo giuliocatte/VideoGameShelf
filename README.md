@@ -12,8 +12,16 @@ python 3.6
 ## SetUp
 Mettere in un file secrets.py le seguenti costanti
 * IGDB_KEY: la chiave di accesso per le API di igdb (https://api.igdb.com/)
+
+### Per integrare Steam
 * STEAM_KEY: la chiave di accesso per le API di steam (https://steamcommunity.com/dev/apikey)
 * STEAM_PLAYER_ID: l'id numerico del giocatore di steam (in chiaro negli url del client)
+
+### Per integrare Humble Bundle
+al momento è necessario fare login via browser e pescare il contenuto di due cookie
+* HUMBLE_CSRF_COOKIE: il contenuto del cookie "crsf_cookie"
+* HUMBLE_AUTH_COOKIE: il contenuto del cookie "_simpleauth_sess"
+
 
 ## Usage
 Mettere la working directory nella root del repo.
@@ -43,10 +51,10 @@ Questo metodo processa un singolo nome trovato sulla tabella di staging
 
 * Download delle liste di giochi posseduti da:
      * Steam
-     * GOG (TODO)
+     * GOG
      * BattleNet (TODO)
      * Twitch (TODO)
-     * Humble (TODO)
+     * Humble
      * Origin (TODO)
      * Uplay (TODO)
 * Integrazione con le anagrafiche da igdb.com (match basato su steam id o nome)

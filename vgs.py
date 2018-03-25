@@ -22,9 +22,9 @@ def read_int_value():
     return int(val)
 
 
-def ask(text):
-    print(text, '(y/n)')
-    val = input().lower()
+def ask(text, default='n'):
+    print(text, '(y/n) (default: {})'.format(default))
+    val = input().lower() or default
     if val not in ('y', 'n'):
         print("invalid value, quitting")
         sys.exit()
@@ -71,12 +71,18 @@ class Launcher:
         results = data['results']
         print("processing name {}, possible values are:".format(data["name"], len(results)))
         for i, rec in enumerate(results, start=1):
-            print("{}. {} ({} - {})".format(i, rec['slug'], min(d['y'] for d in rec['release_dates']), rec['name']))
+            print("{}. {} ({} - {})".format(
+                i,
+                rec['slug'],
+                min(d['y'] for d in rec['release_dates'] if 'y' in d) if any('y' in d for d in rec.get('release_dates', ())) else '?',
+                rec['name']
+            ))
         if ask("open urls in browser?"):
             for rec in results:
                 webbrowser.open(rec['url'])
-        owned = db.load_entities(Entity.OWNED, {"name": data["name"]})
-        print("you own a game with this name in the following services:")
+        owned = [o for o in db.load_entities(Entity.OWNED,
+                    {"name": data["name"]}) if o['validation'] in {Validation.CONFUSED, Validation.MULTIPLE}]
+        print("you own {} games to process with this names".format(len(owned)))
         for rec in owned:
             game = None
             print("service: {0[service].value}, key: {0[key]}".format(rec))
@@ -105,7 +111,9 @@ class Launcher:
             else:
                 game = results[val - 1]
             if game:
-                db.write_entities(Entity.GAME, [{'id': game['id'], 'name': game['name'], 'data': game}])
+                previous = db.load_entities(Entity.GAME, filter={'id': game['id']}, limit=1, fields=['id'])
+                if not previous:
+                    db.write_entities(Entity.GAME, [{'id': game['id'], 'name': game['name'], 'data': game}])
                 db.update_entities(Entity.OWNED, [rec], {"validation": Validation.MANUAL, "id": game["id"]})
         db.delete_entities(Entity.STAGING, {"name": data["name"]})
         db.connection.commit()

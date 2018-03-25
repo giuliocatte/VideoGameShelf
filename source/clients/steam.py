@@ -1,4 +1,4 @@
-from typing import List
+from typing import Iterator
 
 from steam.webapi import WebAPI
 
@@ -11,7 +11,7 @@ class Connector:
     def __init__(self):
         self.api = WebAPI(STEAM_KEY)
 
-    def get_list(self) -> List[dict]:
+    def get_list(self) -> Iterator[dict]:
 
         # TODO: c'e' modo di escludere schifezze tipo i mod, le beta, e anche i film?
 

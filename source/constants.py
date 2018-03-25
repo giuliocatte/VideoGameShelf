@@ -22,4 +22,5 @@ class Validation(Enum):
 class Service(Enum):
     STEAM = 'steam'
     GOG = 'gog'
+    HUMBLE = 'humble'
 

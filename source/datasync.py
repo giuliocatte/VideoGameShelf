@@ -55,6 +55,7 @@ class DataSync:
         '''
         logging.info("loading masterdata for %s games", len(games))
         valid = []
+        previous = {g['id'] for g in self.db.load_entities(Entity.GAME, fields=['id'])}
         for game, own_recs in games.items():
             res = self.mdconn.games({'search': game})
             # TODO: gestire fallimento
@@ -91,7 +92,8 @@ class DataSync:
             else:
                 self.db.update_entities(Entity.OWNED, own_recs, {"validation": Validation.NOT_FOUND})
 
-        self.db.write_entities(Entity.GAME, [{'id': v['id'], 'name': v['name'], 'data': v} for v in valid])
+        self.db.write_entities(Entity.GAME, [{'id': v['id'], 'name': v['name'], 'data': v}
+                                             for v in valid if v['id'] not in previous])
 
     def game_from_slug(self, slug: str) -> dict:
         r = self.mdconn.games({'filters': {'[slug][eq]': slug}})
